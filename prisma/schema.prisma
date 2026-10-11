@@ -1,0 +1,58 @@
+// Prisma v6 — PostgreSQL (Neon en prod, local via DATABASE_URL).
+// Datasource utilise la connexion poolée + directUrl pour les migrations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+model User {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  name         String
+  passwordHash String
+  role         Role           @default(USER)
+  registrations Registration[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model Event {
+  id            String         @id @default(cuid())
+  title         String
+  description   String
+  startDate     DateTime
+  endDate       DateTime
+  location      String
+  capacity      Int
+  imageUrl      String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  registrations Registration[]
+
+  @@index([startDate])
+}
+
+model Registration {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, email])
+  @@index([eventId])
+}
